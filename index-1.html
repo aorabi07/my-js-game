@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>QuizVerse</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #07080f;
+    --surface: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+    --accent: #7fffd4;
+    --accent2: #a78bfa;
+    --danger: #f87171;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --glow: 0 0 24px rgba(127,255,212,0.18);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Animated BG */
+  .bg-mesh {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 20%, rgba(127,255,212,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 80% 80%, rgba(167,139,250,0.08) 0%, transparent 60%);
+  }
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  .wrapper {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 480px;
+    padding: 16px;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; animation: fadeUp 0.4s ease; }
+  .screen.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px 28px;
+    backdrop-filter: blur(16px);
+  }
+
+  /* ── START SCREEN ── */
+  .brand {
+    font-family: 'Syne', sans-serif;
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+  .brand span { color: var(--accent); }
+  .tagline {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  .highscore-box {
+    margin-top: 24px;
+    padding: 14px 20px;
+    background: rgba(127,255,212,0.05);
+    border: 1px solid rgba(127,255,212,0.12);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .highscore-box .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .highscore-box .value { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; color: var(--accent); }
+
+  .category-label {
+    margin-top: 24px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .categories {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .cat-btn {
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+  .cat-btn .cat-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+  .cat-btn:hover, .cat-btn.selected {
+    border-color: var(--accent);
+    background: rgba(127,255,212,0.07);
+    color: var(--accent);
+  }
+
+  .btn {
+    display: block; width: 100%;
+    padding: 16px;
+    margin-top: 24px;
+    background: var(--accent);
+    color: #07080f;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: all 0.2s;
+    box-shadow: var(--glow);
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 0 36px rgba(127,255,212,0.3); }
+  .btn:active { transform: translateY(0); }
+  .btn.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    box-shadow: none;
+    margin-top: 12px;
+  }
+  .btn.secondary:hover { border-color: var(--accent); color: var(--accent); box-shadow: none; }
+
+  /* ── QUIZ SCREEN ── */
+  .quiz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .qnum {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .qnum span { color: var(--accent); font-weight: 700; }
+
+  .timer-ring {
+    width: 48px; height: 48px;
+    position: relative;
+  }
+  .timer-ring svg { transform: rotate(-90deg); }
+  .timer-ring circle {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+  .timer-bg { stroke: rgba(255,255,255,0.06); }
+  .timer-fill {
+    stroke: var(--accent);
+    stroke-dasharray: 126;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear, stroke 0.3s;
+  }
+  .timer-num {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px; font-weight: 700;
+  }
+
+  .progress-bar {
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 99px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+
+  .score-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px;
+    background: rgba(127,255,212,0.08);
+    border: 1px solid rgba(127,255,212,0.15);
+    border-radius: 99px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px; font-weight: 700;
+    color: var(--accent);
+  }
+  .score-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  .question {
+    font-family: 'Syne', sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 24px;
+    min-height: 80px;
+  }
+
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .opt {
+    padding: 15px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.18s;
+    display: flex; align-items: center; gap: 12px;
+    position: relative; overflow: hidden;
+  }
+  .opt-letter {
+    width: 26px; height: 26px; flex-shrink: 0;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px; font-weight: 700;
+    color: var(--muted);
+    transition: all 0.18s;
+  }
+  .opt:hover { border-color: var(--accent); background: rgba(127,255,212,0.05); }
+  .opt:hover .opt-letter { background: var(--accent); color: #07080f; }
+  .opt.correct {
+    border-color: var(--accent);
+    background: rgba(127,255,212,0.1);
+    pointer-events: none;
+  }
+  .opt.correct .opt-letter { background: var(--accent); color: #07080f; }
+  .opt.wrong {
+    border-color: var(--danger);
+    background: rgba(248,113,113,0.08);
+    pointer-events: none;
+  }
+  .opt.wrong .opt-letter { background: var(--danger); color: #07080f; }
+  .opt.disabled { pointer-events: none; opacity: 0.5; }
+
+  /* ── RESULT SCREEN ── */
+  .result-emoji {
+    font-size: 52px;
+    text-align: center;
+    margin-bottom: 12px;
+    animation: bounce 0.6s ease;
+  }
+  @keyframes bounce {
+    0% { transform: scale(0); }
+    60% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+  .result-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px; font-weight: 800;
+    text-align: center;
+    margin-bottom: 4px;
+  }
+  .result-sub { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+  .stat-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 8px;
+  }
+  .stat {
+    padding: 16px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    text-align: center;
+  }
+  .stat .s-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px; font-weight: 800;
+    color: var(--accent);
+  }
+  .stat .s-lab { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+  .new-record {
+    text-align: center;
+    padding: 10px;
+    background: rgba(167,139,250,0.08);
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--accent2);
+    margin-bottom: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-mesh"></div>
+<div class="bg-grid"></div>
+
+<div class="wrapper">
+
+  <!-- ── START SCREEN ── -->
+  <div class="screen active" id="startScreen">
+    <div class="card">
+      <div class="brand">Quiz<span>Verse</span></div>
+      <div class="tagline">TEST YOUR KNOWLEDGE · 10 QUESTIONS · 15s EACH</div>
+
+      <div class="highscore-box">
+        <div>
+          <div class="label">Best Score</div>
+          <div class="value" id="hsDisplay">0 / 10</div>
+        </div>
+        <div style="font-size:28px">🏆</div>
+      </div>
+
+      <div class="category-label">Choose Category</div>
+      <div class="categories" id="categoryGrid"></div>
+
+      <button class="btn" id="startBtn">Start Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ── QUIZ SCREEN ── -->
+  <div class="screen" id="quizScreen">
+    <div class="card">
+      <div class="quiz-header">
+        <div class="qnum">Question <span id="qNum">1</span> of <span id="qTotal">10</span></div>
+        <div class="score-pill"><div class="dot"></div><span id="liveScore">0</span></div>
+        <div class="timer-ring">
+          <svg width="48" height="48">
+            <circle class="timer-bg" cx="24" cy="24" r="20"/>
+            <circle class="timer-fill" id="timerCircle" cx="24" cy="24" r="20"/>
+          </svg>
+          <div class="timer-num" id="timerNum">15</div>
+        </div>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+
+      <div class="question" id="questionText"></div>
+      <div class="options" id="optionsContainer"></div>
+    </div>
+  </div>
+
+  <!-- ── RESULT SCREEN ── -->
+  <div class="screen" id="resultScreen">
+    <div class="card">
+      <div class="result-emoji" id="resultEmoji">🎉</div>
+      <div class="result-title" id="resultTitle">Great job!</div>
+      <div class="result-sub" id="resultSub">Here's how you did:</div>
+
+      <div id="newRecordBadge" style="display:none" class="new-record">🌟 New Personal Best!</div>
+
+      <div class="stat-grid">
+        <div class="stat">
+          <div class="s-val" id="rScore">0</div>
+          <div class="s-lab">Score</div>
+        </div>
+        <div class="stat">
+          <div class="s-val" id="rPercent">0%</div>
+          <div class="s-lab">Accuracy</div>
+        </div>
+        <div class="stat">
+          <div class="s-val" id="rCorrect">0</div>
+          <div class="s-lab">Correct</div>
+        </div>
+        <div class="stat">
+          <div class="s-val" id="rWrong">0</div>
+          <div class="s-lab">Wrong</div>
+        </div>
+      </div>
+
+      <button class="btn" id="retryBtn">Play Again</button>
+      <button class="btn secondary" id="homeBtn">← Home</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ──────────────────────────────────────
+//  QUESTION BANK
+// ──────────────────────────────────────
+const QUESTIONS = {
+  "💻 CS": [
+    { q: "What does CPU stand for?", opts: ["Central Processing Unit","Computer Power Unit","Control Processing Unit","Central Program Unit"], ans: 0 },
+    { q: "Which data structure uses LIFO order?", opts: ["Queue","Stack","Linked List","Tree"], ans: 1 },
+    { q: "What does HTML stand for?", opts: ["Hyper Text Markup Language","High Tech Modern Language","Hyper Transfer Markup Language","Home Text Markup Language"], ans: 0 },
+    { q: "Which sorting algorithm has average O(n log n) complexity?", opts: ["Bubble Sort","Selection Sort","Merge Sort","Insertion Sort"], ans: 2 },
+    { q: "What is the base of the binary number system?", opts: ["8","10","2","16"], ans: 2 },
+    { q: "Which language is primarily used for AI/ML?", opts: ["Java","C++","Python","Ruby"], ans: 2 },
+    { q: "What is RAM short for?", opts: ["Read Access Memory","Random Access Memory","Rapid Array Memory","Random Array Module"], ans: 1 },
+    { q: "Which protocol is used to send emails?", opts: ["HTTP","FTP","SMTP","TCP"], ans: 2 },
+    { q: "A bit can hold how many values?", opts: ["8","4","2","16"], ans: 2 },
+    { q: "What does SQL stand for?", opts: ["Simple Query Language","Structured Query Language","Sequential Query Logic","Standard Query Language"], ans: 1 },
+    { q: "Which of these is NOT an OOP concept?", opts: ["Inheritance","Polymorphism","Compilation","Encapsulation"], ans: 2 },
+    { q: "What does API stand for?", opts: ["Application Programming Interface","Applied Program Interaction","Automated Program Index","Application Process Interface"], ans: 0 },
+  ],
+  "🌍 General": [
+    { q: "What is the capital of Bangladesh?", opts: ["Chittagong","Sylhet","Dhaka","Rajshahi"], ans: 2 },
+    { q: "How many planets are in our solar system?", opts: ["7","8","9","10"], ans: 1 },
+    { q: "Which ocean is the largest?", opts: ["Atlantic","Indian","Arctic","Pacific"], ans: 3 },
+    { q: "What gas do plants absorb from the atmosphere?", opts: ["Oxygen","Nitrogen","Carbon Dioxide","Hydrogen"], ans: 2 },
+    { q: "How many sides does a hexagon have?", opts: ["5","6","7","8"], ans: 1 },
+    { q: "What is the fastest land animal?", opts: ["Lion","Cheetah","Horse","Leopard"], ans: 1 },
+    { q: "Who invented the telephone?", opts: ["Edison","Tesla","Bell","Marconi"], ans: 2 },
+    { q: "In which continent is the Amazon River?", opts: ["Africa","Asia","Europe","South America"], ans: 3 },
+    { q: "Water boils at how many degrees Celsius?", opts: ["90°","95°","100°","110°"], ans: 2 },
+    { q: "Which is the longest river in the world?", opts: ["Amazon","Nile","Yangtze","Mississippi"], ans: 1 },
+    { q: "How many colors are in a rainbow?", opts: ["5","6","7","8"], ans: 2 },
+    { q: "What is the chemical symbol for Gold?", opts: ["Go","Gd","Au","Ag"], ans: 2 },
+  ],
+  "🔢 Math": [
+    { q: "What is 15 × 15?", opts: ["200","215","225","235"], ans: 2 },
+    { q: "What is the square root of 144?", opts: ["11","12","13","14"], ans: 1 },
+    { q: "How many degrees in a right angle?", opts: ["45","60","90","180"], ans: 2 },
+    { q: "What is 2 to the power of 8?", opts: ["128","256","512","64"], ans: 1 },
+    { q: "Which is a prime number?", opts: ["15","21","37","49"], ans: 2 },
+    { q: "What is 3/4 as a percentage?", opts: ["70%","72%","74%","75%"], ans: 3 },
+    { q: "What is the value of π (pi) to 2 decimal places?", opts: ["3.14","3.16","3.12","3.18"], ans: 0 },
+    { q: "What is the LCM of 4 and 6?", opts: ["12","18","24","6"], ans: 0 },
+    { q: "If x + 5 = 12, what is x?", opts: ["5","6","7","8"], ans: 2 },
+    { q: "What is 100% of 250?", opts: ["25","250","2500","2.5"], ans: 1 },
+    { q: "How many faces does a cube have?", opts: ["4","5","6","8"], ans: 2 },
+    { q: "What is 9² - 4²?", opts: ["65","77","85","65"], ans: 0 },
+  ],
+  "🔬 Science": [
+    { q: "What is the powerhouse of the cell?", opts: ["Nucleus","Ribosome","Mitochondria","Golgi Body"], ans: 2 },
+    { q: "What planet is known as the Red Planet?", opts: ["Venus","Mars","Jupiter","Saturn"], ans: 1 },
+    { q: "What is H2O commonly known as?", opts: ["Salt","Water","Hydrogen","Oxygen"], ans: 1 },
+    { q: "How many bones are in the adult human body?", opts: ["196","206","216","226"], ans: 1 },
+    { q: "What force pulls objects toward Earth?", opts: ["Magnetism","Friction","Gravity","Tension"], ans: 2 },
+    { q: "What is the chemical formula of table salt?", opts: ["NaCl","KCl","CaCl","MgCl"], ans: 0 },
+    { q: "Which organ pumps blood in the human body?", opts: ["Lung","Liver","Kidney","Heart"], ans: 3 },
+    { q: "Light travels at approximately how many km/s?", opts: ["150,000","200,000","300,000","400,000"], ans: 2 },
+    { q: "Which gas makes up most of Earth's atmosphere?", opts: ["Oxygen","Carbon Dioxide","Nitrogen","Argon"], ans: 2 },
+    { q: "DNA stands for?", opts: ["Deoxyribonucleic Acid","Dioxyribose Nucleic Acid","Dinucleotide Acid","Deoxyribose Acid"], ans: 0 },
+    { q: "What is the atomic number of Carbon?", opts: ["4","6","8","12"], ans: 1 },
+    { q: "Which planet has the most moons?", opts: ["Jupiter","Saturn","Uranus","Neptune"], ans: 1 },
+  ],
+};
+
+// ──────────────────────────────────────
+//  STATE
+// ──────────────────────────────────────
+let selectedCat = null;
+let questions   = [];
+let current     = 0;
+let score       = 0;
+let correct     = 0;
+let wrong       = 0;
+let timerID     = null;
+let timeLeft    = 15;
+const TOTAL     = 10;
+const TIME      = 15;
+
+// ──────────────────────────────────────
+//  INIT
+// ──────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+function init() {
+  // render categories
+  const grid = $('categoryGrid');
+  Object.keys(QUESTIONS).forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn';
+    btn.innerHTML = `<span class="cat-icon">${cat.split(' ')[0]}</span>${cat.split(' ').slice(1).join(' ')}`;
+    btn.onclick = () => selectCat(cat, btn);
+    grid.appendChild(btn);
+  });
+
+  // highscore
+  updateHSDisplay();
+
+  $('startBtn').onclick  = startQuiz;
+  $('retryBtn').onclick  = () => { showScreen('startScreen'); };
+  $('homeBtn').onclick   = () => { showScreen('startScreen'); };
+}
+
+function selectCat(cat, btn) {
+  selectedCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function updateHSDisplay() {
+  const hs = parseInt(localStorage.getItem('qv_hs') || '0');
+  $('hsDisplay').textContent = `${hs} / ${TOTAL}`;
+}
+
+// ──────────────────────────────────────
+//  SCREENS
+// ──────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+// ──────────────────────────────────────
+//  QUIZ LOGIC
+// ──────────────────────────────────────
+function startQuiz() {
+  if (!selectedCat) {
+    // auto-select first
+    const firstCat = Object.keys(QUESTIONS)[0];
+    selectedCat = firstCat;
+    document.querySelector('.cat-btn').classList.add('selected');
+  }
+
+  // shuffle and pick TOTAL questions
+  const pool = [...QUESTIONS[selectedCat]];
+  shuffle(pool);
+  questions = pool.slice(0, TOTAL);
+
+  current = 0; score = 0; correct = 0; wrong = 0;
+  $('qTotal').textContent = TOTAL;
+  showScreen('quizScreen');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = questions[current];
+  $('qNum').textContent = current + 1;
+  $('liveScore').textContent = score;
+  $('progressFill').style.width = `${(current / TOTAL) * 100}%`;
+  $('questionText').textContent = q.q;
+
+  const container = $('optionsContainer');
+  container.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.innerHTML = `<span class="opt-letter">${letters[i]}</span>${opt}`;
+    btn.onclick = () => handleAnswer(i);
+    container.appendChild(btn);
+  });
+
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timerID);
+  timeLeft = TIME;
+  updateTimer();
+  timerID = setInterval(() => {
+    timeLeft--;
+    updateTimer();
+    if (timeLeft <= 0) {
+      clearInterval(timerID);
+      timeOut();
+    }
+  }, 1000);
+}
+
+function updateTimer() {
+  $('timerNum').textContent = timeLeft;
+  const circumference = 126;
+  const offset = circumference - (timeLeft / TIME) * circumference;
+  $('timerCircle').style.strokeDashoffset = offset;
+  const pct = timeLeft / TIME;
+  $('timerCircle').style.stroke = pct > 0.5 ? 'var(--accent)' : pct > 0.25 ? '#fbbf24' : 'var(--danger)';
+}
+
+function handleAnswer(idx) {
+  clearInterval(timerID);
+  const q = questions[current];
+  const opts = $('optionsContainer').querySelectorAll('.opt');
+
+  opts.forEach((btn, i) => {
+    if (i === q.ans) btn.classList.add('correct');
+    else if (i === idx && idx !== q.ans) btn.classList.add('wrong');
+    else btn.classList.add('disabled');
+  });
+
+  if (idx === q.ans) { score += 10; correct++; }
+  else { wrong++; }
+
+  setTimeout(nextQuestion, 900);
+}
+
+function timeOut() {
+  wrong++;
+  const q = questions[current];
+  const opts = $('optionsContainer').querySelectorAll('.opt');
+  opts.forEach((btn, i) => {
+    if (i === q.ans) btn.classList.add('correct');
+    else btn.classList.add('disabled');
+  });
+  setTimeout(nextQuestion, 900);
+}
+
+function nextQuestion() {
+  current++;
+  if (current < TOTAL) renderQuestion();
+  else showResult();
+}
+
+// ──────────────────────────────────────
+//  RESULT
+// ──────────────────────────────────────
+function showResult() {
+  $('progressFill').style.width = '100%';
+  const pct = Math.round((correct / TOTAL) * 100);
+  const hs  = parseInt(localStorage.getItem('qv_hs') || '0');
+  const isNew = correct > hs;
+
+  if (isNew) localStorage.setItem('qv_hs', correct);
+
+  // emoji & message
+  let emoji, title, sub;
+  if (pct === 100)      { emoji='🏆'; title='Perfect Score!'; sub='You nailed every question!'; }
+  else if (pct >= 80)   { emoji='🎉'; title='Excellent!'; sub='You\'re on fire!'; }
+  else if (pct >= 60)   { emoji='😊'; title='Good Job!'; sub='Solid performance.'; }
+  else if (pct >= 40)   { emoji='🙂'; title='Not Bad!'; sub='Keep practicing.'; }
+  else                   { emoji='📚'; title='Keep Learning!'; sub='You\'ll do better next time.'; }
+
+  $('resultEmoji').textContent = emoji;
+  $('resultTitle').textContent = title;
+  $('resultSub').textContent   = sub;
+  $('rScore').textContent      = score;
+  $('rPercent').textContent    = pct + '%';
+  $('rCorrect').textContent    = correct;
+  $('rWrong').textContent      = wrong;
+  $('newRecordBadge').style.display = isNew ? 'block' : 'none';
+
+  updateHSDisplay();
+  showScreen('resultScreen');
+}
+
+// ──────────────────────────────────────
+//  UTILS
+// ──────────────────────────────────────
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+init();
+</script>
+</body>
+</html>
